@@ -274,8 +274,8 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts) {
                 overflow-y: auto;
             }
             .pcbuild-sidebar-mobile {
-                
-                transform: translateX(-100%);
+               
+                transform: translateX(-110%);
                 transition: transform 0.3s ease-in-out;
                 top: 0;
                 left: 0;
@@ -292,10 +292,7 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts) {
             .pcbuild-sidebar-mobile.open {
                 transform: translateX(0);
 }
-            .pcbuild-sidebar-toggle {
-                display: block;
-                margin-bottom: 10px;
-            }
+            
         
 
         
@@ -1198,6 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closeSidebar() {
         sidebar.classList.remove('open');
+        
         document.removeEventListener('click', handleOutsideClick);
     }
 
@@ -1213,6 +1211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeSidebar();
             
         } else {
+            // before open i want to hide the sidebar
             sidebar.classList.add('open');
             setTimeout(() => {
                 document.addEventListener('click', handleOutsideClick);
