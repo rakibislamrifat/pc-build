@@ -50,13 +50,12 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts) {
     <div style="width:90%; margin:0 auto; font-family:sans-serif;">
         <div class="pcbuilder-container" style="display:flex; gap:20px; margin-top:20px;">
             <!-- Sidebar -->
-             <!-- i want to click a button and the sidebar will be shown  in mobile view-->
+             
 
             <button class="pcbuild-sidebar-toggle">Filters</button>
 
-            <div class="pcbuild-sidebar pcbuild-sidebar-mobile" style="width:250px; background:#f9f9f9; padding:20px; border-radius:8px;">
+            <div class="pcbuild-sidebar pcbuild-sidebar-mobile"">
                 <div style="margin-bottom:20px;"><strong>Part</strong> | <strong>List</strong></div>
-                <!-- <div style="margin-bottom:20px;"><label><input type="checkbox" checked disabled /> Compatibility Filter</label></div> -->
                 <div style="margin-bottom:20px;">
                     <div>PARTS: <strong id="parts_count"></strong></div>
                     <div>TOTAL: <strong id="parts_total_price"></strong></div>
@@ -138,6 +137,13 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts) {
                         <!-- <button class="add-from-filter">Add From Filter</button> -->
                     </div>
                 </div>
+
+            
+
+
+
+
+
 
                 <table id="pcbuild-table" style="width:100%; border-collapse:collapse;">
                     <thead style="background:#f0f0f0;">
@@ -268,12 +274,33 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts) {
                 overflow-y: auto;
             }
             .pcbuild-sidebar-mobile {
-                display: none;
+                
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                top: 0;
+                left: 0;
+                width: 250px;
+                height: 100%;
+                background: #f9f9f9;
+                padding: 20px;
+                border-radius: 8px 0 0 8px;
+                z-index: 1000;
+                overflow-y: auto;
+                
             }
+            
+            .pcbuild-sidebar-mobile.open {
+                transform: translateX(0);
+}
             .pcbuild-sidebar-toggle {
                 display: block;
                 margin-bottom: 10px;
             }
+        
+
+        
+
+            
         }
         .pcbuild-sidebar-toggle {
             background-color:rgb(10, 45, 83);
@@ -288,6 +315,7 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts) {
                 display: none;
             }
         }
+        
         
     </style>
 
@@ -1164,45 +1192,39 @@ document.addEventListener('DOMContentLoaded', () => {
 	include('parts-footer.php');
     ?>
     <script>
-        // Sidebar toggle functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.querySelector('.pcbuild-sidebar-toggle');
-            const sidebar = document.querySelector('.pcbuild-sidebar-mobile');
-            const mainContent = document.querySelector('.pcbuilder-main');
+    const sidebarToggle = document.querySelector('.pcbuild-sidebar-toggle');
+    const sidebar = document.querySelector('.pcbuild-sidebar-mobile');
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        document.removeEventListener('click', handleOutsideClick);
+    }
+
+    function handleOutsideClick(event) {
+        if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+            closeSidebar();
+        }
+    }
+
+    sidebarToggle.addEventListener('click', function(event) {
+        event.stopPropagation();
+        if (sidebar.classList.contains('open')) {
+            closeSidebar();
             
+        } else {
+            sidebar.classList.add('open');
+            setTimeout(() => {
+                document.addEventListener('click', handleOutsideClick);
+            }, 0);
+        }
+    });
 
-            // Function to close sidebar
-            function closeSidebar() {
-                sidebar.style.display = 'none';
-                document.removeEventListener('click', handleOutsideClick);
-            }
+    sidebar.addEventListener('click', function(event) {
+        event.stopPropagation();
+    });
+});
 
-            // Function to handle clicks outside the sidebar
-            function handleOutsideClick(event) {
-                if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
-                    closeSidebar();
-                }
-            }
-
-            // Toggle sidebar on button click
-            sidebarToggle.addEventListener('click', function(event) {
-                event.stopPropagation();
-                if (sidebar.style.display === 'block') {
-                    closeSidebar();
-                } else {
-                    sidebar.style.display = 'block';
-                    // Add click event listener to document when sidebar is open
-                    setTimeout(() => {
-                        document.addEventListener('click', handleOutsideClick);
-                    }, 0);
-                }
-            });
-
-            // Prevent clicks inside sidebar from closing it
-            sidebar.addEventListener('click', function(event) {
-                event.stopPropagation();
-            });
-        });
     </script>
     <?php
     return ob_get_clean();
