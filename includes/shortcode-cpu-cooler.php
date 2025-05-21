@@ -151,111 +151,377 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts)
 
 
 
-            <table id="pcbuild-table" style="width:100%; border-collapse:collapse;">
-                <thead style="background:#f0f0f0;">
-                    <tr>
-                        <th class="sortable-header" data-key="name"><span class="sort-header-label"><span
-                                    class="sort-arrow">&#9654;</span> Name</span></th>
-                        <th class="sortable-header" data-key="fan_rpm"><span class="sort-header-label"><span
-                                    class="sort-arrow">&#9654;</span> Fan RPM</span></th>
-                        <th class="sortable-header" data-key="noise"><span class="sort-header-label"><span
-                                    class="sort-arrow">&#9654;</span> Noise Level</span></th>
-                        <th class="sortable-header" data-key="radiator"><span class="sort-header-label"><span
-                                    class="sort-arrow">&#9654;</span> Radiator Size</span></th>
-                        <th class="sortable-header" data-key="rating"><span class="sort-header-label"><span
-                                    class="sort-arrow">&#9654;</span>Seller Rating</span></th>
-                        <th class="sortable-header" data-key="price"><span class="sort-header-label"><span
-                                    class="sort-arrow">&#9654;</span> Price</span></th>
-                        <th style="padding:10px;">Action</th>
-                    </tr>
-                </thead>
-                <?php include('rating-count.php'); ?>
-                <tbody>
-                    <?php foreach ($display_items as $index => $item):
-                        $row_bg = ($index % 2 === 0) ? '#d4d4d4' : '#ebebeb';
-                        $asin = $item['ASIN'] ?? '';
-                        $full_title = $item['ItemInfo']['Title']['DisplayValue'] ?? 'Unknown Product';
-                        $title = esc_html(implode(' ', array_slice(explode(' ', $full_title), 0, 4)));
-                        $raw_title = esc_attr($full_title);
-                        $image = $item['Images']['Primary']['Large']['URL'] ?? '';
-                        $raw_image = esc_url($image);
-                        $price = $item['Offers']['Listings'][0]['Price']['DisplayAmount'] ?? 'N/A';
-                        $base_price = $price;
-                        $availability = $item['Offers']['Listings'][0]['Availability']['Message'] ?? 'In Stock';
-                        $product_url = $item['DetailPageURL'] ?? '#';
-                        $features = $item['ItemInfo']['Features']['DisplayValues'] ?? [];
-                        $features_string = implode(' ', $features);
-                        $manufacturer = $item['ItemInfo']['ByLineInfo']['Manufacturer']['DisplayValue'] ?? 'Unknown';
-                        $color = $item['ItemInfo']['ProductInfo']['Color']['DisplayValue'] ?? '';
-                        $sellerCount = $item['Offers']['Listings'][0]['MerchantInfo']['FeedbackCount'] ?? 'Unknown';
-                        $sellerRating = $item['Offers']['Listings'][0]['MerchantInfo']['FeedbackRating'] ?? 'Unknown';
+            <?php
+// CSS to match exactly what's shown in the image
+?>
+<style>
+/* Base table styling */
+#pcbuild-table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-                        // Get height and convert to mm (assuming it's in inches by default)
-                        $height_in = $item['ItemInfo']['ProductInfo']['ItemDimensions']['Height']['DisplayValue'] ?? '';
-                        $height_unit = $item['ItemInfo']['ProductInfo']['ItemDimensions']['Height']['Unit'] ?? '';
-                        $height_mm = '';
+#pcbuild-table thead {
+    background-color: #f0f0f0;
+}
 
-                        if ($height_in !== '' && strtolower($height_unit) === 'inches') {
-                            $height_mm = round(floatval($height_in) * 25.4, 1); // Convert inches to mm
-                        } elseif ($height_in !== '' && strtolower($height_unit) === 'millimeters') {
-                            $height_mm = floatval($height_in);
-                        }
+#pcbuild-table th {
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+}
 
-                        // Extract values
-                        preg_match('/(\d{3,4})\s?RPM/i', $features_string, $rpm_match);
-                        preg_match('/(\d+(\.\d+)?\s?dB)/i', $features_string, $noise_match);
-                        preg_match('/(120|240|280|360)\s?mm/i', $features_string, $rad_match);
-                        preg_match_all('/(AM4|AM5|FM2\+|TR4|sTRX4|LGA[\s-]?(1150|1151|1155|1156|1200|1700|1851|2066))/i', $features_string . ' ' . $full_title, $socket_matches);
+#pcbuild-table td {
+    padding: 12px 10px;
+    vertical-align: middle;
+}
 
-                        $fan_rpm = $rpm_match[1] ?? '-';
-                        $noise_level = $noise_match[1] ?? '-';
-                        $radiator = $rad_match[1] ?? '-';
-                        $compatible_sockets = array_map('trim', array_unique($socket_matches[1]));
-                        if (empty($compatible_sockets))
-                            $compatible_sockets[] = 'all';
-                        $socket = implode(',', $compatible_sockets);
-                        //echo $socket1 = implode(',', $compatible_sockets).'<br>';
-                        $rating_count = display_rating_and_count($sellerRating, $sellerCount);
+/* Product row styling */
+#pcbuild-table tbody tr {
+    border-bottom: 1px solid #ddd;
+}
 
-                        ?>
-                        <tr style="background-color: <?php echo $row_bg; ?>; border-bottom:1px solid #DDD; font-size: 16px"
-                            data-compatible-sockets="<?php echo esc_attr(implode(',', $compatible_sockets)); ?>">
-                            <td style="font-weight:800; padding:10px; display:flex; align-items:center; gap:10px;"
-                                title="<?php echo $raw_title; ?>">
-                                <img src="<?php echo $raw_image; ?>" alt="<?php echo $title; ?>"
-                                    style="width:125px; height:125px; object-fit:cover; border-radius:4px;" />
-                                <?php echo $title; ?>
-                            </td>
-                            <td style="padding:10px;"><?php echo esc_html($fan_rpm); ?></td>
-                            <td style="padding:10px;"><?php echo esc_html($noise_level); ?></td>
-                            <td style="padding:10px;"><?php echo ($radiator !== '-') ? esc_html($radiator) . ' mm' : '-'; ?>
-                            </td>
-                            <td style="padding:10px;"
-                                data-rating="<?php echo isset($sellerRating) ? esc_attr($sellerRating) : ''; ?>">
-                                <?php echo $rating_count; ?></td>
-                            <td style="padding:10px;"><?php echo esc_html($price); ?></td>
-                            <td style="padding:10px;">
-                                <button class="add-to-builder" data-asin="<?php echo esc_attr($asin); ?>"
-                                    data-title="<?php echo esc_attr($full_title); ?>"
-                                    data-image="<?php echo esc_url($image); ?>" data-base="<?php echo esc_attr($base_price); ?>"
-                                    data-shipping="FREE" data-availability="<?php echo esc_attr($availability); ?>"
-                                    data-price="<?php echo esc_attr($base_price); ?>"
-                                    data-category="<?php echo esc_attr($category); ?>"
-                                    data-affiliate-url="<?php echo esc_url($product_url); ?>"
-                                    data-features="<?php echo esc_attr(implode(', ', $features)); ?>"
-                                    data-rating="<?php echo isset($sellerRating) ? esc_attr($sellerRating) : ''; ?>"
-                                    data-socket="<?php echo isset($socket) ? esc_attr($socket) : ''; ?>"
-                                    data-manufacturer="<?php echo esc_attr($manufacturer); ?>"
-                                    data-color="<?php echo esc_attr($color); ?>"
-                                    data-height="<?php echo esc_attr($height_mm); ?>"
-                                    style="padding:10px 18px; background-color:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer;">
-                                    <?php _e('Add', 'aawp-pcbuild'); ?>
-                                </button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+#pcbuild-table tbody tr:nth-child(even) {
+    background-color: #ebebeb;
+}
+
+#pcbuild-table tbody tr:nth-child(odd) {
+    background-color: #d4d4d4;
+}
+
+/* Checkbox styling */
+.product-checkbox {
+    margin-right: 10px;
+}
+
+/* Product image styling */
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    margin-right: 10px;
+}
+
+/* Product name styling */
+.product-name {
+    font-weight: bold;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Star rating styling */
+.star-rating {
+    color: #f9a825;
+    font-size: 14px;
+    display: block;
+}
+
+/* Add button styling */
+.add-to-builder {
+    background-color: #0070c9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 15px;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+/* Mobile responsive styling - EXACT MATCH to the image */
+@media (max-width: 768px) {
+    /* Reset table layout for mobile - exactly like image */
+    #pcbuild-table tbody tr {
+        display: block;
+        margin-bottom: 10px;
+        border: none;
+        padding: 0;
+    }
+    
+    /* Hide table header on mobile */
+    #pcbuild-table thead {
+        display: none;
+    }
+    
+    /* Product cell - exact match to image layout */
+    #pcbuild-table .product-cell {
+        display: flex;
+        padding: 10px;
+        align-items: center;
+        border-bottom: none;
+    }
+    
+    /* Checkbox styling */
+    .product-checkbox {
+        flex: 0 0 20px;
+        margin-right: 10px;
+    }
+    
+    /* Image container */
+    .image-container {
+        flex: 0 0 60px;
+        margin-right: 10px;
+    }
+    
+    /* Product image */
+    .product-image {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+    
+    /* Product details container */
+    .product-info {
+        flex: 1;
+    }
+    
+    /* Product name */
+    .product-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+    }
+    
+    /* Rating stars */
+    .star-rating {
+        margin-bottom: 5px;
+    }
+    
+    /* Specs styling - two column layout in mobile */
+    .specs-container {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    
+    .spec-group {
+        width: 50%;
+        margin-bottom: 8px;
+    }
+    
+    .spec-label {
+        color: #666;
+        font-size: 12px;
+    }
+    
+    .spec-value {
+        font-size: 14px;
+    }
+    
+    /* Price and action row - exact match to image */
+    .price-action-row {
+        display: flex;
+        padding: 10px;
+        justify-content: space-between;
+        align-items: center;
+        background-color: inherit;
+    }
+    
+    /* Price styling */
+    .price {
+        font-weight: bold;
+        font-size: 16px;
+    }
+    
+    /* Add button container */
+    .action-cell {
+        text-align: right;
+    }
+}
+</style>
+
+<table id="pcbuild-table">
+    <thead>
+        <tr>
+            <th class="sortable-header" data-key="name">
+                <span class="sort-header-label"><span class="sort-arrow">&#9654;</span> Name</span>
+            </th>
+            <th class="sortable-header" data-key="fan_rpm">
+                <span class="sort-header-label"><span class="sort-arrow">&#9654;</span> Fan RPM</span>
+            </th>
+            <th class="sortable-header" data-key="noise">
+                <span class="sort-header-label"><span class="sort-arrow">&#9654;</span> Noise Level</span>
+            </th>
+            <th class="sortable-header" data-key="radiator">
+                <span class="sort-header-label"><span class="sort-arrow">&#9654;</span> Radiator Size</span>
+            </th>
+            <th class="sortable-header" data-key="rating">
+                <span class="sort-header-label"><span class="sort-arrow">&#9654;</span> Seller Rating</span>
+            </th>
+            <th class="sortable-header" data-key="price">
+                <span class="sort-header-label"><span class="sort-arrow">&#9654;</span> Price</span>
+            </th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    
+    <?php include('rating-count.php'); ?>
+    
+    <tbody>
+        <?php foreach ($display_items as $index => $item):
+            $row_bg = ($index % 2 === 0) ? '#d4d4d4' : '#ebebeb';
+            $asin = $item['ASIN'] ?? '';
+            $full_title = $item['ItemInfo']['Title']['DisplayValue'] ?? 'Unknown Product';
+            $title = esc_html(implode(' ', array_slice(explode(' ', $full_title), 0, 4)));
+            $raw_title = esc_attr($full_title);
+            $image = $item['Images']['Primary']['Large']['URL'] ?? '';
+            $raw_image = esc_url($image);
+            $price = $item['Offers']['Listings'][0]['Price']['DisplayAmount'] ?? 'N/A';
+            $base_price = $price;
+            $availability = $item['Offers']['Listings'][0]['Availability']['Message'] ?? 'In Stock';
+            $product_url = $item['DetailPageURL'] ?? '#';
+            $features = $item['ItemInfo']['Features']['DisplayValues'] ?? [];
+            $features_string = implode(' ', $features);
+            $manufacturer = $item['ItemInfo']['ByLineInfo']['Manufacturer']['DisplayValue'] ?? 'Unknown';
+            $color = $item['ItemInfo']['ProductInfo']['Color']['DisplayValue'] ?? '';
+            $sellerCount = $item['Offers']['Listings'][0]['MerchantInfo']['FeedbackCount'] ?? 'Unknown';
+            $sellerRating = $item['Offers']['Listings'][0]['MerchantInfo']['FeedbackRating'] ?? 'Unknown';
+
+            // Get height and convert to mm (assuming it's in inches by default)
+            $height_in = $item['ItemInfo']['ProductInfo']['ItemDimensions']['Height']['DisplayValue'] ?? '';
+            $height_unit = $item['ItemInfo']['ProductInfo']['ItemDimensions']['Height']['Unit'] ?? '';
+            $height_mm = '';
+
+            if ($height_in !== '' && strtolower($height_unit) === 'inches') {
+                $height_mm = round(floatval($height_in) * 25.4, 1); // Convert inches to mm
+            } elseif ($height_in !== '' && strtolower($height_unit) === 'millimeters') {
+                $height_mm = floatval($height_in);
+            }
+
+            // Extract values
+            preg_match('/(\d{3,4})\s?RPM/i', $features_string, $rpm_match);
+            preg_match('/(\d+(\.\d+)?\s?dB)/i', $features_string, $noise_match);
+            preg_match('/(120|240|280|360)\s?mm/i', $features_string, $rad_match);
+            preg_match_all('/(AM4|AM5|FM2\+|TR4|sTRX4|LGA[\s-]?(1150|1151|1155|1156|1200|1700|1851|2066))/i', $features_string . ' ' . $full_title, $socket_matches);
+
+            $fan_rpm = $rpm_match[1] ?? '-';
+            $noise_level = $noise_match[1] ?? '-';
+            $radiator = $rad_match[1] ?? '-';
+            $compatible_sockets = array_map('trim', array_unique($socket_matches[1]));
+            if (empty($compatible_sockets))
+                $compatible_sockets[] = 'all';
+            $socket = implode(',', $compatible_sockets);
+            $rating_count = display_rating_and_count($sellerRating, $sellerCount);
+            
+            // Generate star rating HTML
+            $star_rating = '';
+            $rating_value = floatval($sellerRating ?? 0);
+            for ($i = 1; $i <= 5; $i++) {
+                if ($i <= $rating_value) {
+                    $star_rating .= '★';
+                } else {
+                    $star_rating .= '☆';
+                }
+            }
+        ?>
+            <!-- Mobile-responsive row structure to match the image exactly -->
+            <tr class="product-row" style="background-color: <?php echo $row_bg; ?>;" data-compatible-sockets="<?php echo esc_attr(implode(',', $compatible_sockets)); ?>">
+                <!-- Regular desktop view -->
+                <?php if(true): // Always show desktop version, it will be hidden via CSS on mobile ?>
+                <td style="font-weight:800; padding:10px; display:flex; align-items:center; gap:10px;" title="<?php echo $raw_title; ?>">
+                    <input type="checkbox" class="product-checkbox">
+                    <img src="<?php echo $raw_image; ?>" alt="<?php echo $title; ?>" style="width:125px; height:125px; object-fit:cover; border-radius:4px;" />
+                    <div>
+                        <div><?php echo $title; ?></div>
+                        <div class="star-rating"><?php echo $star_rating; ?> <span class="review-count">(<?php echo $sellerCount ?? 0; ?>)</span></div>
+                    </div>
+                </td>
+                <td style="padding:10px;"><?php echo esc_html($fan_rpm); ?></td>
+                <td style="padding:10px;"><?php echo esc_html($noise_level); ?></td>
+                <td style="padding:10px;"><?php echo ($radiator !== '-') ? esc_html($radiator) . ' mm' : '-'; ?></td>
+                <td style="padding:10px;" data-rating="<?php echo isset($sellerRating) ? esc_attr($sellerRating) : ''; ?>">
+                    <?php echo $rating_count; ?>
+                </td>
+                <td style="padding:10px;"><?php echo esc_html($price); ?></td>
+                <td style="padding:10px;">
+                    <button class="add-to-builder" data-asin="<?php echo esc_attr($asin); ?>"
+                        data-title="<?php echo esc_attr($full_title); ?>"
+                        data-image="<?php echo esc_url($image); ?>" 
+                        data-base="<?php echo esc_attr($base_price); ?>"
+                        data-shipping="FREE" 
+                        data-availability="<?php echo esc_attr($availability); ?>"
+                        data-price="<?php echo esc_attr($base_price); ?>"
+                        data-category="<?php echo esc_attr($category); ?>"
+                        data-affiliate-url="<?php echo esc_url($product_url); ?>"
+                        data-features="<?php echo esc_attr(implode(', ', $features)); ?>"
+                        data-rating="<?php echo isset($sellerRating) ? esc_attr($sellerRating) : ''; ?>"
+                        data-socket="<?php echo isset($socket) ? esc_attr($socket) : ''; ?>"
+                        data-manufacturer="<?php echo esc_attr($manufacturer); ?>"
+                        data-color="<?php echo esc_attr($color); ?>"
+                        data-height="<?php echo esc_attr($height_mm); ?>">
+                        <?php _e('Add', 'aawp-pcbuild'); ?>
+                    </button>
+                </td>
+                <?php endif; ?>
+                
+                <!-- Mobile view structure - will be shown via CSS media queries -->
+                <td class="product-cell mobile-only" style="display:none;">
+                    <input type="checkbox" class="product-checkbox">
+                    <div class="image-container">
+                        <img src="<?php echo $raw_image; ?>" alt="<?php echo $title; ?>" class="product-image">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name"><?php echo $title; ?></div>
+                        <div class="star-rating"><?php echo $star_rating; ?> <span class="review-count">(<?php echo $sellerCount ?? 0; ?>)</span></div>
+                        
+                        <!-- Specs container - exactly matching the image layout -->
+                        <div class="specs-container">
+                            <div class="spec-group">
+                                <div class="spec-label">Speed</div>
+                                <div class="spec-value">DDR5-6000</div>
+                            </div>
+                            <div class="spec-group">
+                                <div class="spec-label">Modules</div>
+                                <div class="spec-value">2 x 16GB</div>
+                            </div>
+                            <div class="spec-group">
+                                <div class="spec-label">Color</div>
+                                <div class="spec-value"><?php echo esc_html($color); ?></div>
+                            </div>
+                            <div class="spec-group">
+                                <div class="spec-label">First Word Latency</div>
+                                <div class="spec-value">12 ns</div>
+                            </div>
+                            <div class="spec-group">
+                                <div class="spec-label">Price / GB</div>
+                                <div class="spec-value">$2.861</div>
+                            </div>
+                            <div class="spec-group">
+                                <div class="spec-label">CAS Latency</div>
+                                <div class="spec-value">36</div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Price and Add button row for mobile -->
+                <td class="price-action-row mobile-only" style="display:none;">
+                    <div class="price"><?php echo esc_html($price); ?></div>
+                    <div class="action-cell">
+                        <button class="add-to-builder" data-asin="<?php echo esc_attr($asin); ?>"
+                            data-title="<?php echo esc_attr($full_title); ?>"
+                            data-image="<?php echo esc_url($image); ?>" 
+                            data-base="<?php echo esc_attr($base_price); ?>"
+                            data-shipping="FREE" 
+                            data-availability="<?php echo esc_attr($availability); ?>"
+                            data-price="<?php echo esc_attr($base_price); ?>"
+                            data-category="<?php echo esc_attr($category); ?>"
+                            data-affiliate-url="<?php echo esc_url($product_url); ?>"
+                            data-features="<?php echo esc_attr(implode(', ', $features)); ?>"
+                            data-rating="<?php echo isset($sellerRating) ? esc_attr($sellerRating) : ''; ?>"
+                            data-socket="<?php echo isset($socket) ? esc_attr($socket) : ''; ?>"
+                            data-manufacturer="<?php echo esc_attr($manufacturer); ?>"
+                            data-color="<?php echo esc_attr($color); ?>"
+                            data-height="<?php echo esc_attr($height_mm); ?>">
+                            <?php _e('Add', 'aawp-pcbuild'); ?>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+
 
             <?php if ($total_pages > 1): ?>
                 <div style="margin-top: 20px; text-align: center;">
@@ -274,6 +540,190 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts)
         </div>
     </div>
     </div>
+
+    <!-- style for tablet and mobile view -->
+    <style>
+/* Base table styling */
+#pcbuild-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#pcbuild-table thead {
+    background-color: #f0f0f0;
+}
+
+#pcbuild-table th {
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+}
+
+#pcbuild-table td {
+    padding: 12px 10px;
+    vertical-align: middle;
+}
+
+/* Product row styling */
+#pcbuild-table tbody tr {
+    border-bottom: 1px solid #ddd;
+}
+
+#pcbuild-table tbody tr:nth-child(even) {
+    background-color: #ebebeb;
+}
+
+#pcbuild-table tbody tr:nth-child(odd) {
+    background-color: #d4d4d4;
+}
+
+/* Checkbox styling */
+.product-checkbox {
+    margin-right: 10px;
+}
+
+/* Product image styling */
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    margin-right: 10px;
+}
+
+/* Product name styling */
+.product-name {
+    font-weight: bold;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Star rating styling */
+.star-rating {
+    color: #f9a825;
+    font-size: 14px;
+    display: block;
+}
+
+/* Add button styling */
+.add-to-builder {
+    background-color: #0070c9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 15px;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+/* Mobile responsive styling - EXACT MATCH to the image */
+@media (max-width: 768px) {
+    /* Reset table layout for mobile - exactly like image */
+    #pcbuild-table tbody tr {
+        display: block;
+        margin-bottom: 10px;
+        border: none;
+        padding: 0;
+    }
+    
+    /* Hide table header on mobile */
+    #pcbuild-table thead {
+        display: none;
+    }
+    
+    /* Product cell - exact match to image layout */
+    #pcbuild-table .product-cell {
+        display: flex;
+        padding: 10px;
+        align-items: center;
+        border-bottom: none;
+    }
+    
+    /* Checkbox styling */
+    .product-checkbox {
+        flex: 0 0 20px;
+        margin-right: 10px;
+    }
+    
+    /* Image container */
+    .image-container {
+        flex: 0 0 60px;
+        margin-right: 10px;
+    }
+    
+    /* Product image */
+    .product-image {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+    
+    /* Product details container */
+    .product-info {
+        flex: 1;
+    }
+    
+    /* Product name */
+    .product-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+    }
+    
+    /* Rating stars */
+    .star-rating {
+        margin-bottom: 5px;
+    }
+    
+    /* Specs styling - two column layout in mobile */
+    .specs-container {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    
+    .spec-group {
+        width: 50%;
+        margin-bottom: 8px;
+    }
+    
+    .spec-label {
+        color: #666;
+        font-size: 12px;
+    }
+    
+    .spec-value {
+        font-size: 14px;
+    }
+    
+    /* Price and action row - exact match to image */
+    .price-action-row {
+        display: flex;
+        padding: 10px;
+        justify-content: space-between;
+        align-items: center;
+        background-color: inherit;
+    }
+    
+    /* Price styling */
+    .price {
+        font-weight: bold;
+        font-size: 16px;
+    }
+    
+    /* Add button container */
+    .action-cell {
+        text-align: right;
+    }
+}
+</style>
+
+
+
+
+
+
+    
 
     <style>
         @media (max-width: 768px) {
@@ -1254,6 +1704,56 @@ function aawp_pcbuild_display_parts_cpu_cooler($atts)
         });
 
     </script>
+
+<!-- Add this JavaScript to transform the table for mobile views -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function setupMobileView() {
+        // Get all product rows
+        const rows = document.querySelectorAll('#pcbuild-table tbody tr');
+        
+        // Function to check if we're on mobile
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+        
+        // Function to set up the correct view
+        function updateView() {
+            const mobile = isMobile();
+            
+            // Show/hide appropriate elements based on view
+            document.querySelectorAll('.mobile-only').forEach(el => {
+                el.style.display = mobile ? 'flex' : 'none';
+            });
+            
+            // Handle the desktop view elements
+            const desktopCells = document.querySelectorAll('#pcbuild-table tr > td:not(.mobile-only)');
+            desktopCells.forEach(cell => {
+                cell.style.display = mobile ? 'none' : '';
+            });
+            
+            // Show/hide thead based on view
+            const thead = document.querySelector('#pcbuild-table thead');
+            if (thead) {
+                thead.style.display = mobile ? 'none' : '';
+            }
+        }
+        
+        // Set initial view
+        updateView();
+        
+        // Update view on resize
+        window.addEventListener('resize', updateView);
+    }
+    
+    // Initialize mobile view setup
+    setupMobileView();
+});
+</script>
+
+
+
+
     <?php
     return ob_get_clean();
 }
